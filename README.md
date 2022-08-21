@@ -11,7 +11,10 @@ Download the `pico-sdk` and set the correct environment variables:
 PICO_SDK_PATH=/path/to/pico-sdk
 ```
 
-`cd build/`
+```
+cd build/
+cmake ..
+```
 
 and then run
 
