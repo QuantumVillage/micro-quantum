@@ -1,7 +1,7 @@
 <img src="uQ.png" data-canonical-src="uQ.png" width="200"/>
 
 # uQ : micro Quantum
-uQ - an embedded quantum simualtor
+uQ - an embedded quantum simulator
 
 ## Hardware Required
 
