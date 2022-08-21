@@ -47,6 +47,13 @@ The usage is as follows:
   * `x` - the SWAP gate (MUST come in pairs)
   * `V` - the square root of the `X` gate
   * `c` - the control indicator - adds single qubit control to any given gate in that slice
-* Press `A` to simulate and generate the output state vector
+* Press `A` to compute the circuit and generate the output state vector
 * Press `B` to clear the circuit
 * Press `X` for the help screen
+
+## TODOs
+
+1. Add a decent PRNG (seeded quantumly?) and properly simulate the circuit
+1. Add more gates
+1. Add support for multiple controls in a single slice (like `mcx` in qiskit)
+
