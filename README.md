@@ -3,7 +3,7 @@
 # uQ : micro Quantum
 uQ - an embedded quantum simualtor
 
-# Hardware Required
+## Hardware Required
 
 The uQ is currently designed for the following hardware (with links to PiHut):
 * Raspberry Pi Pico - [https://thepihut.com/products/raspberry-pi-pico](https://thepihut.com/products/raspberry-pi-pico)
@@ -11,7 +11,7 @@ The uQ is currently designed for the following hardware (with links to PiHut):
 
 These parts were chosen as they are very easy to assemble, and give us a nice basic interface; a screen, a small joystick, and some buttons. 
 
-# Firmware Instructions
+## Firmware Instructions
 
 Download the [`pico-sdk`](https://github.com/raspberrypi/pico-sdk) and set the correct environment variables:
 
@@ -30,7 +30,7 @@ and then run
 
 Then press `BOOTSEL` whilst plugging in the pico into a USB port, which will present as a USB drive. Now move the `main.u2f` to the drive, it will reboot and flash and you're good!
 
-# What you should see
+## What you should see
 
 When you have built the module you should see something like this:
 
