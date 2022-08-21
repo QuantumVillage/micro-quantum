@@ -13,7 +13,7 @@ These parts were chosen as they are very easy to assemble, and give us a nice ba
 
 # Firmware Instructions
 
-Download the `pico-sdk` and set the correct environment variables:
+Download the [`pico-sdk`](https://github.com/raspberrypi/pico-sdk) and set the correct environment variables:
 
 ``` 
 PICO_SDK_PATH=/path/to/pico-sdk
@@ -49,4 +49,4 @@ The usage is as follows:
   * `c` - the control indicator - adds single qubit control to any given gate in that slice
 * Press `A` to simulate and generate the output state vector
 * Press `B` to clear the circuit
-* Press `C` for the help screen
+* Press `X` for the help screen
