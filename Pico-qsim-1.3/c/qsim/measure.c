@@ -8,19 +8,20 @@
 
 // STATIC GATES 
 
-gate X = {
+gate X = { // the X, or NOT, gate
     {0,1},
     {1,0}
 };
 
 // h is 1/sqrt(2)
 const double h = 0.70710678118;
-gate H = {
+gate H = { // the Hadamard Gate - puts a qubit into superposition
     {h, h},
     {h, -h}
 };
 
-gate Rx = {
+gate Rx = { // rotate about the X axis... 
+    // this will be set later, for now just set as identity in case anything goes wrong.
     {1, 0},
     {0, 1}
 }; // set to Id, gets reset by Rx() later
@@ -30,17 +31,17 @@ gate Id = { //named so it doesn't conflict with the I in complex.h
     {0, 1}
 };
 
-gate OP0 = {
+gate OP0 = { // outer product of |0><0|
     {1, 0},
     {0, 0}
 };
 
-gate OP1 = {
+gate OP1 = { // outer product of |1><1|
     {0, 0},
     {0, 1}
 };
 
-gate V = {
+gate V = { // the sqrt(X), or square root of NOT, gate
     {0.5 + 0.5 * I, 0.5 - 0.5 * I},
     {0.5 - 0.5 * I, 0.5 + 0.5 * I}
 };
@@ -64,7 +65,7 @@ void set_Rx(double complex rot)
 }
 
 gate *char2gate(char c)
-{
+{ // converts a character in our state to a gate pointer in our state vector SV
     switch(c)
     {
         case 'I':
@@ -86,7 +87,7 @@ gate *char2gate(char c)
 }
 
 int tensor_prod(int a, int b, int dimP, double complex A[a][a], double complex B[b][b], double complex P[dimP][dimP])
-{
+{ // tensor product of square matrices A and B into P, with a,b,dimP the sizes of each matrix.
     for(int a_x = 0; a_x < a; a_x++)
     {
         for(int b_x = 0; b_x < b; b_x++)
@@ -105,7 +106,7 @@ int tensor_prod(int a, int b, int dimP, double complex A[a][a], double complex B
 }
 
 void updateSV()
-{
+{ // update the state vector SV (global) 
     double complex new_SV[16] = {0};
     for (int i = 0; i < 16; i++)
     {
@@ -123,7 +124,7 @@ void updateSV()
 }
 
 void add_ctrlSM(double complex c_SM0[16][16], double complex c_SM1[16][16], double complex out_SM[16][16])
-{
+{ // add two square matrices together - used in computing control gates.
     for (int i = 0; i <16; i++)
     {
         for (int j = 0; j < 16; j++)
@@ -134,7 +135,7 @@ void add_ctrlSM(double complex c_SM0[16][16], double complex c_SM1[16][16], doub
 }
 
 void evalCtrlStep(gate *c_step[4], double complex c_SM[16][16])
-{
+{ // evaluate the control gate step - perform the tensor products for the 'off' and 'on' matrices.
     double complex aa[4][4];
     double complex ab[8][8];
     tensor_prod(2, 2, 4, *c_step[1], *c_step[0], aa);
@@ -145,6 +146,8 @@ void evalCtrlStep(gate *c_step[4], double complex c_SM[16][16])
 void evaluate_ctrl(char slice[4][8], int index)
 {
     // assume single control for now... -MC
+    // Each control gate is made up of an 'off' and 'on' square matrix, 
+    // corresponding to the two possible state of the control qubit.
     gate *step_0[4];
     gate *step_1[4];
     double complex ctrl_SM0[16][16] = {0}; // for when ctrl is |0>
@@ -153,8 +156,8 @@ void evaluate_ctrl(char slice[4][8], int index)
     {
         if (i == index)
         {
-            step_0[i] = (gate *)OP0;
-            step_1[i] = (gate *)OP1;
+            step_0[i] = (gate *)OP0; // the 'off' matrix
+            step_1[i] = (gate *)OP1; // the 'on' matrix
             continue;
         }
         step_0[i] = (gate *)Id;
@@ -167,10 +170,12 @@ void evaluate_ctrl(char slice[4][8], int index)
 }
 
 void evalStep()
-{
-    double complex aa[4][4];
-    double complex ab[8][8];
-    double complex ac[16][16];
+{ // evaluate each successive 'step' of the quantum circuit. Essentially, perform tensor products 
+  // that construct the square matrix for that 'slice' of the quantum circuit. (where a slice is 
+  // just a column of gates, with lines being identity gates.)
+    double complex aa[4][4]; // first two qubits
+    double complex ab[8][8]; // third qubit
+    double complex ac[16][16]; // fourth qubit
     tensor_prod(2, 2, 4, *step[1], *step[0], aa);
     tensor_prod(2, 4, 8, *step[2], aa, ab);
     tensor_prod(2, 8, 16, *step[3], ab, SM);
@@ -179,6 +184,8 @@ void evalStep()
 
 void evaluate_swap(char slice[4][8], int i1)
 {
+    // SWAP gates can be easily computed by means of three CNOT gates.
+    // So this is what we do here...
     // Work out where the 'x' chars are
     int i2 = 0;
     for (int i = i1; i < 4; i++)
@@ -192,7 +199,7 @@ void evaluate_swap(char slice[4][8], int i1)
     // now gosub for three ctrl slices that
     // are equivalent to SWAP
 
-    // first, make the slices
+    // first, make the interim slices
     char s1[4][8];
     char s2[4][8];
     for (int j = 0; j < 4; j++)
@@ -201,20 +208,24 @@ void evaluate_swap(char slice[4][8], int i1)
         strcpy(s2[j], "-");
     }
 
-    strcpy(s1[i1], "c");
-    strcpy(s1[i2], "X");
+    strcpy(s1[i1], "c"); // the first CNOT
+    strcpy(s1[i2], "X"); // the second CNOT
     strcpy(s2[i1], "X");
     strcpy(s2[i2], "c");
 
     //then process them
     evaluate_ctrl(s1, i1);
     evaluate_ctrl(s2, i2);
-    evaluate_ctrl(s1, i1); // repeat 
+    evaluate_ctrl(s1, i1); // repeat the first CNOT to complete the SWAP.
     return;
 }
 
 void processSlice(char slice[4][8])
-{
+{ // each slice of our circuit is processed sequentially.
+  // Note that for any circuit, multiplying the starting state vector (|100...0>) 
+  // by each successive square matrix of each slice is the same as computing all
+  // the slices, multiplying them together, and then applying the initial state 
+  // vector... It's just that the first one is *MUCH* friendlier on the RAM ;) -MC
     for (int i = 0; i < 4; i++)
     {
         if (slice[i][0] == 'c') // process a ctrl gate
@@ -237,7 +248,7 @@ void processSlice(char slice[4][8])
 }
 
 void evalCircuit(char circuit[14][4][8])
-{
+{ // a circuit is just a sequence of slices... so pass each slice to processSlice.
     for (int i = 0; i < 14; i++)
     {
         processSlice(circuit[i]); //sets 'step' to be the gates for a slice of the quantum tape
@@ -247,7 +258,7 @@ void evalCircuit(char circuit[14][4][8])
 
 
 int measure(char circuit[14][4][8], double complex stateVecIn[16])
-{
+{ // This is the main SV generator that the produces the distribution at the end.
     // reset the stateVec 
     for (int i = 0; i < 16; i++)
     {
@@ -265,6 +276,7 @@ int measure(char circuit[14][4][8], double complex stateVecIn[16])
 
    // take the circuit as input
    // update the local stateVec 
+   // this is the global SM, the state matrix, with SV the global state vector.
    evalCircuit(circuit);
 
    // pass the output to the regular stateVec...
