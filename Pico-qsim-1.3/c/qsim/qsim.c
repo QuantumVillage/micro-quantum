@@ -4,8 +4,12 @@
 #include "gates.h"
 #include "measure.h"
 #include "img_hex.h"
+#include "simulate.h"
 #include <string.h>
 #include <math.h>
+#include <time.h>
+#include "hardware/structs/systick.h"
+
 
 char bin_strs[16][5] = {
     "0000",
@@ -92,12 +96,14 @@ void draw_circuit(char circuit[14][4][8], uint16_t* BlackImage)
     Paint_DrawString_EN(0,90,buff_instr,&Font16, WHITE, BLACK);
     sprintf(buff_instr, "Change gate: push");
     Paint_DrawString_EN(0,110,buff_instr,&Font16, WHITE, BLACK);
-    sprintf(buff_instr, "Run circuit: A");
+    sprintf(buff_instr, "Run circuit:   A");
     Paint_DrawString_EN(0,130,buff_instr,&Font16, WHITE, BLACK);
     sprintf(buff_instr, "Clear circuit: B");
     Paint_DrawString_EN(0,150,buff_instr,&Font16, WHITE, BLACK);
-    sprintf(buff_instr, "Gate Details: X");
+    sprintf(buff_instr, "Gate Details:  X");
     Paint_DrawString_EN(0,170,buff_instr,&Font16, WHITE, BLACK);
+    sprintf(buff_instr, "Run Sims:      Y");
+    Paint_DrawString_EN(0,190,buff_instr,&Font16, WHITE, BLACK);
     //LCD_1IN14_Display(BlackImage);
     LCD_1IN3_Display(BlackImage);
 }
@@ -200,8 +206,61 @@ void draw_results(double complex stateVec[16], UWORD* BlackImage)
     return;
 }
 
+void draw_sim_results(uint8_t res[4], uint32_t time_diff, UWORD* BlackImage)
+{
+    Paint_Clear(WHITE);
+    int ctr_x = 0;
+    int ctr_y = 1;
+    char buff[64];
+    sprintf(buff, "Simulation Outputs:");
+    Paint_DrawString_EN(0,0,buff,&Font16, WHITE, BLACK);
+    for (int i = 0; i < 8; i++)
+    {
+        char buff[64];
+        uint8_t r = res[i] & 0xF; // just the last 4 bits, just in case... -MC
+        sprintf(buff, " Simulation %i: %s ", i, bin_strs[r]);
+        Paint_DrawString_EN(ctr_x*120, ctr_y*14, buff, &Font16, BLACK, WHITE);
+        ++ctr_y;
+    }
+    sprintf(buff, "Exec Time: %i cycles", time_diff);
+    Paint_DrawString_EN(ctr_x*120, (ctr_y+1)*14, buff, &Font16, WHITE, BLACK);
+    //LCD_1IN14_Display(BlackImage);
+    LCD_1IN3_Display(BlackImage);
+
+    // wait for button presses
+    uint8_t keyA = 15; 
+    uint8_t keyB = 17;
+    uint8_t keyX = 19;
+    uint8_t keyY = 21;
+    while(1)
+    {
+        if(DEV_Digital_Read(keyA) == 0){
+            return;
+        }
+        if(DEV_Digital_Read(keyB) == 0){
+            return;
+        }
+        if(DEV_Digital_Read(keyX) == 0){
+            return;
+        }
+        if(DEV_Digital_Read(keyY) == 0){
+            return;
+        }
+
+    }
+    return;
+}
+
+clock_t clock()
+{
+    return (clock_t) time_us_64() / 10000;
+}
+
 int qsim(void)
 {
+    // let's get busy...
+    stdio_init_all();
+    // have a delay, let the screen come online
     DEV_Delay_ms(100);
     //printf("LCD_1in3_test Demo\r\n");
     if(DEV_Module_Init()!=0){
@@ -341,6 +400,17 @@ int qsim(void)
         }
         if(DEV_Digital_Read(keyX) == 0){
             draw_help_gates(BlackImage);
+        }
+        if(DEV_Digital_Read(keyY) == 0){
+            // get updated SV from circuit
+            measure(circuit, stateVec);
+            // run a simulation!
+            uint8_t res[8] = {0};
+            uint32_t startTime = time_us_64();
+            simulate(stateVec, res);
+            uint32_t endTime =  time_us_64();
+            uint32_t time_diff = endTime - startTime;
+            draw_sim_results(res, time_diff, BlackImage);
         }
         // Display the current state
         // populating a screen in a 4 x 4 grid
